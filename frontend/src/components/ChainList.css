@@ -1,0 +1,42 @@
+.chain-list {
+  margin-top: 2rem;
+}
+
+.chain-list h3 {
+  color: #667eea;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.chains-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.chain-item {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1rem;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  transition: transform 0.2s ease;
+}
+
+.chain-item:hover {
+  transform: translateY(-2px);
+}
+
+.chain-name {
+  font-weight: 600;
+}
+
+.chain-currency {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}

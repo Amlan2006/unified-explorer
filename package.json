@@ -1,0 +1,23 @@
+{
+  "name": "unified-evm-explorer",
+  "version": "1.0.0",
+  "description": "Unified block explorer for searching tokens and contracts across all EVM chains",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "search": "npm run build && node dist/cli.js"
+  },
+  "keywords": ["ethereum", "evm", "blockchain", "explorer", "multi-chain"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ethers": "^6.11.0",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.0"
+  }
+}
