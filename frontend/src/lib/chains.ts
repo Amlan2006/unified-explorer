@@ -18,7 +18,7 @@ export const SUPPORTED_CHAINS: ChainConfig[] = [
   {
     chainId: 137,
     name: 'Polygon',
-    rpcUrl: 'https://polygon-rpc.com',
+    rpcUrl: 'https://polygon-mainnet.g.alchemy.com/v2/TTv-2_LhIs8KWHfpliz5L',
     explorer: 'https://polygonscan.com',
     nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 }
   },
