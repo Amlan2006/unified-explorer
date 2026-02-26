@@ -2,13 +2,16 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: radial-gradient(circle at top, #020617 0, #020617 45%, #000 100%);
+  color: #e5e7eb;
 }
 
 .header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(14px);
   padding: 2rem 0;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 25px rgba(0, 0, 0, 0.6);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 .container {
@@ -20,7 +23,7 @@
 .title {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #667eea;
+  color: #38bdf8;
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
@@ -33,7 +36,7 @@
 
 .subtitle {
   font-size: 1.1rem;
-  color: #666;
+  color: #9ca3af;
 }
 
 .main {
@@ -42,15 +45,15 @@
 }
 
 .error-message {
-  background: #fee;
-  border: 2px solid #fcc;
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.6);
   border-radius: 12px;
   padding: 1rem 1.5rem;
   margin: 2rem 0;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: #c33;
+  color: #fecaca;
   font-weight: 500;
 }
 
@@ -84,21 +87,22 @@
 }
 
 .welcome {
-  background: white;
+  background: radial-gradient(circle at top left, #111827 0, #020617 55%, #020617 100%);
   border-radius: 16px;
   padding: 3rem;
   margin-top: 2rem;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
 .welcome-content h2 {
-  color: #667eea;
+  color: #38bdf8;
   margin-bottom: 1rem;
   font-size: 1.8rem;
 }
 
 .welcome-content p {
-  color: #666;
+  color: #9ca3af;
   margin-bottom: 1.5rem;
   font-size: 1.1rem;
 }
@@ -111,16 +115,17 @@
 .welcome-content li {
   padding: 0.75rem 0;
   font-size: 1.05rem;
-  color: #555;
+  color: #d1d5db;
 }
 
 .footer {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(15, 23, 42, 0.9);
   backdrop-filter: blur(10px);
   padding: 1.5rem 0;
   text-align: center;
-  color: #666;
+  color: #9ca3af;
   margin-top: auto;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 @media (max-width: 768px) {
