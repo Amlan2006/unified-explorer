@@ -226,6 +226,9 @@ export class UnifiedExplorer {
         '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58', // USDT
         '0x7F5c764cBc14f9669B88837ca1490cCa17c31607', // USDC
         '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', // DAI
+      ],
+      159: [ // Roburna Testnet
+        '0x67e67af2c0B5DAccf275F848BaFe509a71e8DAb0', // Amlan Test Token (ATT)
       ]
     };
 
@@ -233,16 +236,44 @@ export class UnifiedExplorer {
   }
 
   async smartSearch(query: string): Promise<SearchResult> {
-    // Determine search type
+    // 1) Address search always wins if valid
     if (ethers.isAddress(query)) {
       return await this.searchByAddress(query);
-    } else if (query.length <= 6 && query.toUpperCase() === query) {
-      // Likely a token symbol (e.g., USDT, ETH)
-      return await this.searchByTokenSymbol(query);
-    } else {
-      // Likely a token name
-      return await this.searchByTokenName(query);
     }
+
+    const trimmed = query.trim();
+    if (!trimmed) {
+      return {
+        found: false,
+        results: [],
+        searchTerm: query,
+        searchType: 'token-name-or-symbol'
+      };
+    }
+
+    // 2) Search by BOTH symbol and name across all chains
+    const [symbolResult, nameResult] = await Promise.all([
+      this.searchByTokenSymbol(trimmed),
+      this.searchByTokenName(trimmed)
+    ]);
+
+    // Merge + dedupe by address+chainId
+    const seen = new Set<string>();
+    const merged = [...symbolResult.results, ...nameResult.results].filter(
+      r => {
+        const key = `${r.chainId}:${r.address.toLowerCase()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }
+    );
+
+    return {
+      found: merged.length > 0,
+      results: merged,
+      searchTerm: query,
+      searchType: 'token-name-or-symbol'
+    };
   }
 
   getSupportedChains() {

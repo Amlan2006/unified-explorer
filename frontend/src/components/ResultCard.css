@@ -190,3 +190,82 @@
   color: #764ba2;
   transform: translateX(4px);
 }
+
+/* Dark theme overrides */
+.result-card {
+  background: radial-gradient(circle at top left, #020617 0, #020617 55%, #000 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(30, 64, 175, 0.7);
+}
+
+.result-card:hover {
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.9);
+  border-color: #38bdf8;
+}
+
+.card-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1d2437 45%, #020617 100%);
+}
+
+.card-body {
+  background: transparent;
+}
+
+.address-section label,
+.info-item label,
+.token-label {
+  color: #9ca3af;
+}
+
+.address-display {
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.address-display code {
+  color: #38bdf8;
+}
+
+.info-item span,
+.token-value {
+  color: #e5e7eb;
+}
+
+.contract-badge {
+  background: rgba(37, 99, 235, 0.25);
+  color: #bfdbfe;
+}
+
+.wallet-badge {
+  background: rgba(147, 51, 234, 0.25);
+  color: #e9d5ff;
+}
+
+.token-info {
+  background: radial-gradient(circle at top left, #111827 0, #020617 65%, #000 100%);
+  border-radius: 10px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+}
+
+.token-info h4 {
+  color: #38bdf8;
+}
+
+.token-symbol {
+  background: rgba(15, 23, 42, 0.95);
+  color: #38bdf8;
+}
+
+.card-footer {
+  background: transparent;
+  border-top: 1px solid rgba(30, 64, 175, 0.6);
+}
+
+.explorer-link {
+  color: #93c5fd;
+}
+
+.explorer-link:hover {
+  color: #38bdf8;
+}

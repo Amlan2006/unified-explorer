@@ -201,6 +201,9 @@ export class UnifiedExplorer {
       137: [
         '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
         '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+      ],
+      159: [
+        '0x67e67af2c0B5DAccf275F848BaFe509a71e8DAb0',
       ]
     };
 
@@ -208,25 +211,45 @@ export class UnifiedExplorer {
   }
 
   async smartSearch(queryParam: string): Promise<SearchResult> {
-    const query = queryParam.trim();
-    const queryStr = String(query);
-    
-    // Check if it's an address first (without type narrowing)
-    try {
-      if (ethers.isAddress(queryStr)) {
-        return await this.searchByAddress(queryStr);
+    const raw = String(queryParam ?? '');
+    const query = raw.trim();
+
+    // 1) Try address search first
+    if (query && ethers.isAddress(query)) {
+      return await this.searchByAddress(query);
+    }
+
+    if (!query) {
+      return {
+        found: false,
+        results: [],
+        searchTerm: '',
+        searchType: 'token-name-or-symbol'
+      };
+    }
+
+    // 2) In the frontend, also search BOTH symbol and name and merge
+    const [symbolResult, nameResult] = await Promise.all([
+      this.searchByTokenSymbol(query),
+      this.searchByTokenName(query)
+    ]);
+
+    const seen = new Set<string>();
+    const merged = [...symbolResult.results, ...nameResult.results].filter(
+      r => {
+        const key = `${r.chainId}:${r.address.toLowerCase()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
       }
-    } catch (e) {
-      // Not an address, continue
-    }
-    
-    // Check if it's likely a symbol (short and all uppercase)
-    if (queryStr.length <= 6 && queryStr === queryStr.toUpperCase()) {
-      return await this.searchByTokenSymbol(queryStr);
-    }
-    
-    // Otherwise treat as token name
-    return await this.searchByTokenName(queryStr);
+    );
+
+    return {
+      found: merged.length > 0,
+      results: merged,
+      searchTerm: query,
+      searchType: 'token-name-or-symbol'
+    };
   }
 
   getSupportedChains() {
