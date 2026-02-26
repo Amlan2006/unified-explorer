@@ -34,5 +34,5 @@ export interface SearchResult {
   found: boolean;
   results: ContractInfo[];
   searchTerm: string;
-  searchType: 'address' | 'token-name' | 'token-symbol';
+  searchType: 'address' | 'token-name' | 'token-symbol' | 'token-name-or-symbol';
 }

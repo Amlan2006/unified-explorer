@@ -9,6 +9,19 @@ const ERC20_ABI = [
   'function totalSupply() view returns (uint256)'
 ];
 
+const COINGECKO_API = 'https://api.coingecko.com/api/v3';
+
+const PLATFORM_CHAIN_IDS: Record<string, number> = {
+  ethereum: 1,
+  'binance-smart-chain': 56,
+  'polygon-pos': 137,
+  'arbitrum-one': 42161,
+  optimism: 10,
+  avalanche: 43114,
+  fantom: 250,
+  base: 8453
+};
+
 export class UnifiedExplorer {
   private providers: Map<number, ethers.JsonRpcProvider> = new Map();
 
@@ -189,22 +202,45 @@ export class UnifiedExplorer {
   private getKnownTokensByChain(chainId: number): string[] {
     const tokensByChain: Record<number, string[]> = {
       1: [
-        '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-        '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-        '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-        '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
+        // Ethereum
+        '0xdAC17F958D2ee523a2206206994597C13D831ec7', // USDT
+        '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
+        '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI
+        '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
+        '0x514910771AF9Ca656af840dff83E8264EcF986CA', // LINK
+        '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9', // AAVE
+        '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI
       ],
       56: [
-        '0x55d398326f99059fF775485246999027B3197955',
-        '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
+        // BSC
+        '0x55d398326f99059fF775485246999027B3197955', // USDT
+        '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC
+        '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', // BUSD
+        '0x2170Ed0880ac9A755fd29B2688956BD959F933F8', // ETH
       ],
       137: [
-        '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
-        '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+        // Polygon
+        '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', // USDT
+        '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', // USDC
+        '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063', // DAI
+        '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619', // WETH
+      ],
+      42161: [
+        // Arbitrum
+        '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', // USDT
+        '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // USDC
+        '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', // DAI
+      ],
+      10: [
+        // Optimism
+        '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58', // USDT
+        '0x7F5c764cBc14f9669B88837ca1490cCa17c31607', // USDC
+        '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', // DAI
       ],
       159: [
-        '0x67e67af2c0B5DAccf275F848BaFe509a71e8DAb0',
-      ]
+        // Roburna Testnet
+        '0x67e67af2c0B5DAccf275F848BaFe509a71e8DAb0', // Amlan Test Token (ATT)
+      ],
     };
 
     return tokensByChain[chainId] || [];
@@ -228,28 +264,85 @@ export class UnifiedExplorer {
       };
     }
 
-    // 2) In the frontend, also search BOTH symbol and name and merge
-    const [symbolResult, nameResult] = await Promise.all([
-      this.searchByTokenSymbol(query),
-      this.searchByTokenName(query)
-    ]);
-
-    const seen = new Set<string>();
-    const merged = [...symbolResult.results, ...nameResult.results].filter(
-      r => {
-        const key = `${r.chainId}:${r.address.toLowerCase()}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      }
+    // 2) Use external token index (CoinGecko) to discover tokens
+    //    by name or symbol across supported EVM chains.
+    const externalResults = await this.searchTokensByNameOrSymbolExternal(
+      query
     );
 
     return {
-      found: merged.length > 0,
-      results: merged,
+      found: externalResults.length > 0,
+      results: externalResults,
       searchTerm: query,
       searchType: 'token-name-or-symbol'
     };
+  }
+
+  private async searchTokensByNameOrSymbolExternal(
+    query: string
+  ): Promise<ContractInfo[]> {
+    try {
+      const searchResponse = await fetch(
+        `${COINGECKO_API}/search?query=${encodeURIComponent(query)}`
+      );
+      if (!searchResponse.ok) {
+        return [];
+      }
+
+      const searchData: any = await searchResponse.json();
+      const coins: any[] = Array.isArray(searchData?.coins)
+        ? searchData.coins
+        : [];
+
+      const topCoins = coins.slice(0, 8);
+      const results: ContractInfo[] = [];
+
+      for (const coin of topCoins) {
+        try {
+          const detailResponse = await fetch(
+            `${COINGECKO_API}/coins/${coin.id}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false`
+          );
+          if (!detailResponse.ok) continue;
+
+          const detailData: any = await detailResponse.json();
+          const platforms: Record<string, string> = detailData?.platforms || {};
+
+          for (const [platform, address] of Object.entries(platforms)) {
+            const chainId = PLATFORM_CHAIN_IDS[platform];
+            if (!chainId || !address) continue;
+
+            const chain = SUPPORTED_CHAINS.find(
+              c => c.chainId === Number(chainId)
+            );
+            if (!chain) continue;
+
+            const tokenInfo = await this.getTokenInfo(address, chainId);
+            if (!tokenInfo) continue;
+
+            results.push({
+              address,
+              chain: chain.name,
+              chainId,
+              isContract: true,
+              balance: '0',
+              tokenInfo
+            });
+          }
+        } catch {
+          continue;
+        }
+      }
+
+      const seen = new Set<string>();
+      return results.filter(result => {
+        const key = `${result.chainId}:${result.address.toLowerCase()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    } catch {
+      return [];
+    }
   }
 
   getSupportedChains() {

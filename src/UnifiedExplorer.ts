@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import axios from 'axios';
 import { SUPPORTED_CHAINS } from './chains';
 import { ContractInfo, SearchResult, TokenInfo } from './types';
 
@@ -8,6 +9,19 @@ const ERC20_ABI = [
   'function decimals() view returns (uint8)',
   'function totalSupply() view returns (uint256)'
 ];
+
+const COINGECKO_API = 'https://api.coingecko.com/api/v3';
+
+const PLATFORM_CHAIN_IDS: Record<string, number> = {
+  ethereum: 1,
+  'binance-smart-chain': 56,
+  'polygon-pos': 137,
+  'arbitrum-one': 42161,
+  optimism: 10,
+  avalanche: 43114,
+  fantom: 250,
+  base: 8453
+};
 
 export class UnifiedExplorer {
   private providers: Map<number, ethers.JsonRpcProvider> = new Map();
@@ -251,29 +265,94 @@ export class UnifiedExplorer {
       };
     }
 
-    // 2) Search by BOTH symbol and name across all chains
-    const [symbolResult, nameResult] = await Promise.all([
-      this.searchByTokenSymbol(trimmed),
-      this.searchByTokenName(trimmed)
-    ]);
-
-    // Merge + dedupe by address+chainId
-    const seen = new Set<string>();
-    const merged = [...symbolResult.results, ...nameResult.results].filter(
-      r => {
-        const key = `${r.chainId}:${r.address.toLowerCase()}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      }
+    // 2) Use external token index (CoinGecko) to discover tokens
+    //    by name or symbol across supported EVM chains.
+    const externalResults = await this.searchTokensByNameOrSymbolExternal(
+      trimmed
     );
 
     return {
-      found: merged.length > 0,
-      results: merged,
+      found: externalResults.length > 0,
+      results: externalResults,
       searchTerm: query,
       searchType: 'token-name-or-symbol'
     };
+  }
+
+  private async searchTokensByNameOrSymbolExternal(
+    query: string
+  ): Promise<ContractInfo[]> {
+    try {
+      const searchResponse = await axios.get(`${COINGECKO_API}/search`, {
+        params: { query }
+      });
+
+      const coins: any[] = Array.isArray(searchResponse.data?.coins)
+        ? searchResponse.data.coins
+        : [];
+
+      // Limit to a reasonable number of matches to avoid API spam
+      const topCoins = coins.slice(0, 8);
+
+      const results: ContractInfo[] = [];
+
+      for (const coin of topCoins) {
+        try {
+          const detailResponse = await axios.get(
+            `${COINGECKO_API}/coins/${coin.id}`,
+            {
+              params: {
+                localization: false,
+                tickers: false,
+                market_data: false,
+                community_data: false,
+                developer_data: false,
+                sparkline: false
+              }
+            }
+          );
+
+          const platforms: Record<string, string> =
+            detailResponse.data?.platforms || {};
+
+          for (const [platform, address] of Object.entries(platforms)) {
+            const chainId = PLATFORM_CHAIN_IDS[platform];
+            if (!chainId || !address) continue;
+
+            const chain = SUPPORTED_CHAINS.find(
+              c => c.chainId === Number(chainId)
+            );
+            if (!chain) continue;
+
+            const tokenInfo = await this.getTokenInfo(address, chainId);
+            if (!tokenInfo) continue;
+
+            results.push({
+              address,
+              chain: chain.name,
+              chainId,
+              isContract: true,
+              balance: '0',
+              tokenInfo
+            });
+          }
+        } catch {
+          // Ignore individual coin failures and continue
+          continue;
+        }
+      }
+
+      // Dedupe by chainId + address
+      const seen = new Set<string>();
+      return results.filter(result => {
+        const key = `${result.chainId}:${result.address.toLowerCase()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    } catch {
+      return [];
+    }
   }
 
   getSupportedChains() {
